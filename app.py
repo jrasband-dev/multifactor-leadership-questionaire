@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 # Define questions for each section
 transformational_questions = [
@@ -18,7 +19,6 @@ transformational_questions = [
     "My leader considers my personal needs when assigning tasks.",
     "My leader recognizes my unique strengths and encourages me to use them."
 ]
-
 
 transactional_questions = [
     "My leader makes clear the rewards I can expect for good performance.",
@@ -50,7 +50,6 @@ team_effectiveness_questions = [
     "Our team’s achievements are recognized within the organization."
 ]
 
-
 # Scale descriptors
 scale_descriptors = [
     "1 - Not at all",
@@ -62,7 +61,7 @@ scale_descriptors = [
 
 # Function to calculate average scores
 def calculate_average(scores):
-    return sum(scores) / len(scores)
+    return sum(scores) / len(scores) if scores else 0
 
 # Streamlit UI
 st.title("Leadership Questionnaire")
@@ -77,8 +76,7 @@ def collect_responses(questions):
             options=scale_descriptors,
             index=2,  # Default to the middle option
             key=question,
-            label_visibility='collapsed',
-            # horizontal=True
+            label_visibility='collapsed'
         )
         responses[question] = scale_descriptors.index(selected_value) + 1
     return responses
@@ -99,10 +97,49 @@ transactional_score = calculate_average(list(transactional_responses.values()))
 laissez_faire_score = calculate_average(list(laissez_faire_responses.values()))
 team_effectiveness_score = calculate_average(list(team_effectiveness_responses.values()))
 
-# Display results
+# Display results and export to CSV
 if st.button("Calculate Results"):
     st.header("Results")
     st.write(f"**Transformational Leadership Score:** {transformational_score:.2f}")
     st.write(f"**Transactional Leadership Score:** {transactional_score:.2f}")
     st.write(f"**Laissez-Faire Leadership Score:** {laissez_faire_score:.2f}")
     st.write(f"**Team and Leader Effectiveness Score:** {team_effectiveness_score:.2f}")
+
+    # Create DataFrame for CSV export with questions and responses
+    responses_data = {
+        "Question": list(transformational_responses.keys()) + list(transactional_responses.keys()) +
+                    list(laissez_faire_responses.keys()) + list(team_effectiveness_responses.keys()),
+        "Response": list(transformational_responses.values()) + list(transactional_responses.values()) +
+                    list(laissez_faire_responses.values()) + list(team_effectiveness_responses.values())
+    }
+
+    scores_data = {
+        "Score Type": [
+            "Transformational Leadership",
+            "Transactional Leadership",
+            "Laissez-Faire Leadership",
+            "Team Effectiveness"
+        ],
+        "Score": [
+            transformational_score,
+            transactional_score,
+            laissez_faire_score,
+            team_effectiveness_score
+        ]
+    }
+
+    # Combine responses and scores into a single DataFrame
+    responses_df = pd.DataFrame(responses_data)
+    scores_df = pd.DataFrame(scores_data)
+    final_df = pd.concat([responses_df, scores_df], ignore_index=True)
+
+    # Convert DataFrame to CSV
+    csv = final_df.to_csv(index=False)
+
+    # Provide CSV download link
+    st.download_button(
+        label="Download Results and Responses as CSV",
+        data=csv,
+        file_name="leadership_questionnaire_results.csv",
+        mime="text/csv"
+    )
